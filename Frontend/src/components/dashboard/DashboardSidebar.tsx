@@ -24,11 +24,11 @@ const menuItems = [
 ];
 
 export function DashboardSidebar() {
-  const { profile, signOut } = useAuth();
+  const { profile, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await signOut();
+    logout();
     navigate('/');
   };
 

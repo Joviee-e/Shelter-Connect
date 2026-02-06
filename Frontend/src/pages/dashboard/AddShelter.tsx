@@ -14,6 +14,32 @@ const AddShelter = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+const QUICK_AMENITIES = [
+  'Hot meals',
+  'Showers',
+  'Laundry',
+  'Medical services',
+  'Mental health support',
+  'Case management',
+  'Free WiFi',
+  'Family friendly',
+  'Women only',
+  'Children services',
+];
+const toggleAmenity = (amenity: string) => {
+  const current = formData.amenities
+    ? formData.amenities.split(',').map(a => a.trim())
+    : [];
+
+  const updated = current.includes(amenity)
+    ? current.filter(a => a !== amenity)
+    : [...current, amenity];
+
+  setFormData({
+    ...formData,
+    amenities: updated.join(', '),
+  });
+};
 
   const [formData, setFormData] = useState({
     name: '',
@@ -247,71 +273,142 @@ const AddShelter = () => {
         </Card>
 
         {/* Accessibility & Amenities */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Accessibility & Amenities</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="accessibility"
-                  checked={formData.accessibility}
-                  onChange={(e) => setFormData({ ...formData, accessibility: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="accessibility">Wheelchair Accessible</Label>
-              </div>
+       {/* Accessibility & Amenities */}
+<Card>
+  <CardHeader>
+    <CardTitle>Accessibility & Amenities</CardTitle>
+  </CardHeader>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="pet_friendly"
-                  checked={formData.pet_friendly}
-                  onChange={(e) => setFormData({ ...formData, pet_friendly: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="pet_friendly">Pet Friendly</Label>
-              </div>
-            </div>
+  <CardContent className="space-y-4">
+    {/* Accessibility checkboxes */}
+    <div className="flex flex-wrap gap-4">
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="accessibility"
+          checked={formData.accessibility}
+          onChange={(e) =>
+            setFormData({ ...formData, accessibility: e.target.checked })
+          }
+          className="w-4 h-4"
+        />
+        <Label htmlFor="accessibility">Wheelchair Accessible</Label>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="languages">Supported Languages</Label>
-              <Input
-                id="languages"
-                value={formData.languages}
-                onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
-                placeholder="English, Spanish, Mandarin"
-              />
-              <p className="text-xs text-muted-foreground">Separate with commas</p>
-            </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="pet_friendly"
+          checked={formData.pet_friendly}
+          onChange={(e) =>
+            setFormData({ ...formData, pet_friendly: e.target.checked })
+          }
+          className="w-4 h-4"
+        />
+        <Label htmlFor="pet_friendly">Pet Friendly</Label>
+      </div>
+    </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="amenities">Amenities</Label>
-              <Textarea
-                id="amenities"
-                value={formData.amenities}
-                onChange={(e) => setFormData({ ...formData, amenities: e.target.value })}
-                placeholder="Hot meals, Showers, Laundry, Medical services"
-                rows={2}
-              />
-              <p className="text-xs text-muted-foreground">Separate with commas</p>
-            </div>
+    {/* Languages */}
+    <div className="space-y-2">
+      <Label htmlFor="languages">Supported Languages</Label>
+      <Input
+        id="languages"
+        value={formData.languages}
+        onChange={(e) =>
+          setFormData({ ...formData, languages: e.target.value })
+        }
+        placeholder="English, Spanish, Mandarin"
+      />
+      <p className="text-xs text-muted-foreground">Separate with commas</p>
+    </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="rules">Shelter Rules</Label>
-              <Textarea
-                id="rules"
-                value={formData.rules}
-                onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
-                placeholder="No alcohol or drugs, Check-in by 9 PM, Respectful behavior required"
-                rows={2}
-              />
-              <p className="text-xs text-muted-foreground">Separate with commas</p>
-            </div>
-          </CardContent>
-        </Card>
+    {/* 🔥 QUICK ADD AMENITIES */}
+    <div className="space-y-2">
+      <Label>Quick Add Amenities</Label>
+
+      <div className="flex flex-wrap gap-2">
+        {[
+          'Hot meals',
+          'Showers',
+          'Laundry',
+          'Medical services',
+          'Mental health support',
+          'Case management',
+          'Free WiFi',
+          'Family friendly',
+          'Women only',
+          'Children services',
+        ].map((amenity) => {
+          const selected = formData.amenities
+            ?.split(',')
+            .map(a => a.trim())
+            .includes(amenity);
+
+          return (
+            <button
+              key={amenity}
+              type="button"
+              onClick={() => {
+                const current = formData.amenities
+                  ? formData.amenities.split(',').map(a => a.trim())
+                  : [];
+
+                const updated = current.includes(amenity)
+                  ? current.filter(a => a !== amenity)
+                  : [...current, amenity];
+
+                setFormData({
+                  ...formData,
+                  amenities: updated.join(', '),
+                });
+              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition
+                ${
+                  selected
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-muted hover:bg-muted/80 border-border'
+                }`}
+            >
+              <span>{amenity}</span>
+              <span className="font-bold">{selected ? '×' : '+'}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+
+    {/* Amenities textarea (UNCHANGED) */}
+    <div className="space-y-2">
+      <Label htmlFor="amenities">Amenities</Label>
+      <Textarea
+        id="amenities"
+        value={formData.amenities}
+        onChange={(e) =>
+          setFormData({ ...formData, amenities: e.target.value })
+        }
+        placeholder="Hot meals, Showers, Laundry, Medical services"
+        rows={2}
+      />
+      <p className="text-xs text-muted-foreground">Separate with commas</p>
+    </div>
+
+    {/* Rules */}
+    <div className="space-y-2">
+      <Label htmlFor="rules">Shelter Rules</Label>
+      <Textarea
+        id="rules"
+        value={formData.rules}
+        onChange={(e) =>
+          setFormData({ ...formData, rules: e.target.value })
+        }
+        placeholder="No alcohol or drugs, Check-in by 9 PM, Respectful behavior required"
+        rows={2}
+      />
+      <p className="text-xs text-muted-foreground">Separate with commas</p>
+    </div>
+  </CardContent>
+</Card>
 
         <Button type="submit" className="w-full" disabled={submitting}>
           <Save className="w-4 h-4 mr-2" />

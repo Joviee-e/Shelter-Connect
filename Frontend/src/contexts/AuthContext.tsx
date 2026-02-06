@@ -1,159 +1,76 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase, authDisabled } from '@/integrations/supabase/client';
+import { createContext, useContext, useEffect, useState } from 'react';
 
-interface Profile {
-  id: string;
-  ngo_name: string;
+interface User {
   email: string;
-  phone: string | null;
+  ngo_name: string;
+  phone?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
-  profile: Profile | null;
-  loading: boolean;
-  signUp: (email: string, password: string, ngoName: string, phone: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
+  profile: User | null;
+  login: (email: string, password: string) => boolean;
+  logout: () => void;
+  changePassword: (newPassword: string) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-const mockUser = {
-  id: 'ui-only-user',
-  aud: 'authenticated',
-  role: 'authenticated',
-  email: 'demo@local',
-  created_at: new Date().toISOString(),
-  app_metadata: { provider: 'email', providers: ['email'] },
-  user_metadata: { ngo_name: 'Demo NGO' },
-} as User;
-
-const mockProfile: Profile = {
-  id: 'ui-only-user',
-  ngo_name: 'Demo NGO',
-  email: 'demo@local',
-  phone: '000-000-0000',
-};
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (!error && data) {
-      setProfile(data);
-    }
-  };
 
   useEffect(() => {
-    if (authDisabled) {
-      setUser(mockUser);
-      setSession(null);
-      setProfile(mockProfile);
-      setLoading(false);
-      return;
+    const storedUser = localStorage.getItem('auth_user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
-
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Defer profile fetch with setTimeout
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, ngoName: string, phone: string) => {
-    if (authDisabled) {
-      return { error: null };
+  const login = (email: string, password: string) => {
+    const storedPassword =
+      localStorage.getItem('auth_password') || 'password123';
+
+    if (email === 'demo@ngo.com' && password === storedPassword) {
+      const dummyUser = {
+        email,
+        ngo_name: 'Demo NGO',
+        phone: '000-000-0000',
+      };
+
+      localStorage.setItem('auth_user', JSON.stringify(dummyUser));
+      setUser(dummyUser);
+      return true;
     }
 
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          ngo_name: ngoName,
-          phone: phone,
-        }
-      }
-    });
-    
-    return { error: error as Error | null };
+    return false;
   };
 
-  const signIn = async (email: string, password: string) => {
-    if (authDisabled) {
-      return { error: null };
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    return { error: error as Error | null };
+  const logout = () => {
+    localStorage.removeItem('auth_user');
+    setUser(null);
   };
 
-  const signOut = async () => {
-    if (authDisabled) {
-      return;
-    }
-
-    await supabase.auth.signOut();
-    setProfile(null);
+  const changePassword = (newPassword: string) => {
+    localStorage.setItem('auth_password', newPassword);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile: user,
+        login,
+        logout,
+        changePassword,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  return ctx;
+};

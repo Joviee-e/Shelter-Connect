@@ -15,6 +15,10 @@ const RequestShelterModal = ({
   isOpen,
 }: RequestShelterModalProps) => {
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [gender, setGender] = useState('');
+  const [age, setAge] = useState('');
   const [bedsNeeded, setBedsNeeded] = useState(1);
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -22,10 +26,13 @@ const RequestShelterModal = ({
   if (!open) return null;
 
   const handleSubmit = () => {
-    // later you can send this to backend
     console.log({
       shelterId: shelter.id,
       name,
+      phone,
+      email,
+      gender,
+      age,
       bedsNeeded,
       notes,
     });
@@ -75,6 +82,55 @@ const RequestShelterModal = ({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your name"
+                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Phone Number</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Enter phone number"
+                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter email address"
+                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Gender</label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer-not-to-say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Age</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="Enter age"
                   className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>

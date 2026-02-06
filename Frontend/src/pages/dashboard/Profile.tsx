@@ -3,15 +3,26 @@ import { User, Mail, Phone, Save, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import ChangePasswordModal from '@/components/ChangePasswordModal';
 
 const Profile = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
+
   const [submitting, setSubmitting] = useState(false);
-  
+
+  // ✅ MODAL STATE (MUST BE INSIDE COMPONENT)
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
   const [formData, setFormData] = useState({
     ngo_name: profile?.ngo_name || '',
     phone: profile?.phone || '',
@@ -21,8 +32,7 @@ const Profile = () => {
     e.preventDefault();
 
     setSubmitting(true);
-    
-    // Mock save - in production this would save to Supabase
+
     setTimeout(() => {
       toast({
         title: 'Profile updated',
@@ -51,6 +61,7 @@ const Profile = () => {
             Update your organization details
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -60,7 +71,9 @@ const Profile = () => {
                 <Input
                   id="ngo_name"
                   value={formData.ngo_name}
-                  onChange={(e) => setFormData({ ...formData, ngo_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, ngo_name: e.target.value })
+                  }
                   className="pl-10"
                   required
                 />
@@ -92,20 +105,40 @@ const Profile = () => {
                   id="phone"
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                   className="pl-10"
                   placeholder="+1 (555) 000-0000"
                 />
               </div>
             </div>
 
-            <Button type="submit" disabled={submitting}>
-              <Save className="w-4 h-4 mr-2" />
-              {submitting ? 'Saving...' : 'Save Changes'}
-            </Button>
+            {/* ACTION BUTTONS */}
+            <div className="flex gap-3">
+              <Button type="submit" disabled={submitting}>
+                <Save className="w-4 h-4 mr-2" />
+                {submitting ? 'Saving...' : 'Save Changes'}
+              </Button>
+
+              {/* ✅ OPEN MODAL */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowPasswordModal(true)}
+              >
+                Change Password
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      {/* ✅ PASSWORD MODAL */}
+      <ChangePasswordModal
+        open={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
     </div>
   );
 };

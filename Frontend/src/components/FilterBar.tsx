@@ -1,6 +1,12 @@
 import { Dog, Accessibility, Clock, Users } from 'lucide-react';
 
-export type FilterType = 'all' | 'family' | 'accessibility' | 'pet_friendly' | 'open_now';
+export type FilterType =
+  | 'all'
+  | 'family'
+  | 'women'        // ✅ ADDED
+  | 'accessibility'
+  | 'pet_friendly'
+  | 'open_now';
 
 interface FilterBarProps {
   activeFilters: FilterType[];
@@ -10,6 +16,10 @@ interface FilterBarProps {
 const filters: { id: FilterType; label: string; icon: React.ReactNode }[] = [
   { id: 'open_now', label: 'Open Now', icon: <Clock className="w-4 h-4" /> },
   { id: 'family', label: 'Family', icon: <Users className="w-4 h-4" /> },
+
+  // ✅ FEMALE ONLY FILTER
+  { id: 'women', label: 'Women Only', icon: <Users className="w-4 h-4" /> },
+
   { id: 'accessibility', label: 'Accessible', icon: <Accessibility className="w-4 h-4" /> },
   { id: 'pet_friendly', label: 'Pet Friendly', icon: <Dog className="w-4 h-4" /> },
 ];

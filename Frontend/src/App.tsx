@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+
 import Landing from "./pages/Landing";
 import ShelterList from "./pages/ShelterList";
 import ShelterDetail from "./pages/ShelterDetail";
@@ -27,14 +28,14 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Public Routes */}
+            {/* Public */}
             <Route path="/" element={<Landing />} />
             <Route path="/shelters" element={<ShelterList />} />
             <Route path="/shelter/:id" element={<ShelterDetail />} />
             <Route path="/emergency" element={<Emergency />} />
             <Route path="/auth" element={<Auth />} />
-            
-            {/* NGO Dashboard Routes */}
+
+            {/* Protected Dashboard */}
             <Route path="/dashboard" element={<DashboardLayout />}>
               <Route index element={<DashboardHome />} />
               <Route path="add-shelter" element={<AddShelter />} />
@@ -42,7 +43,7 @@ const App = () => (
               <Route path="requests" element={<Requests />} />
               <Route path="profile" element={<Profile />} />
             </Route>
-            
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
