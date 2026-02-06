@@ -1,0 +1,278 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Emergency-friendly calming palette */
+    --background: 200 20% 98%;
+    --foreground: 210 40% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 40% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 15%;
+
+    /* Calming teal-blue as primary */
+    --primary: 187 70% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Soft sage green secondary */
+    --secondary: 150 25% 90%;
+    --secondary-foreground: 160 30% 25%;
+
+    --muted: 200 15% 92%;
+    --muted-foreground: 210 15% 45%;
+
+    /* Gentle green accent for success/availability */
+    --accent: 160 55% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Warm amber for warnings */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Soft coral for emergencies */
+    --emergency: 0 75% 60%;
+    --emergency-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 20% 88%;
+    --input: 200 20% 88%;
+    --ring: 187 70% 42%;
+
+    --radius: 1rem;
+
+    /* Custom shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(210 40% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(210 40% 15% / 0.08), 0 2px 4px -1px hsl(210 40% 15% / 0.04);
+    --shadow-lg: 0 10px 15px -3px hsl(210 40% 15% / 0.1), 0 4px 6px -2px hsl(210 40% 15% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(210 40% 15% / 0.1), 0 10px 10px -5px hsl(210 40% 15% / 0.04);
+  }
+
+  .dark {
+    --background: 210 40% 10%;
+    --foreground: 200 20% 95%;
+
+    --card: 210 35% 14%;
+    --card-foreground: 200 20% 95%;
+
+    --popover: 210 35% 14%;
+    --popover-foreground: 200 20% 95%;
+
+    --primary: 187 65% 50%;
+    --primary-foreground: 210 40% 10%;
+
+    --secondary: 160 20% 18%;
+    --secondary-foreground: 160 25% 85%;
+
+    --muted: 210 30% 18%;
+    --muted-foreground: 200 15% 60%;
+
+    --accent: 160 50% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --warning: 38 90% 55%;
+    --warning-foreground: 210 40% 10%;
+
+    --emergency: 0 70% 55%;
+    --emergency-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 30% 22%;
+    --input: 210 30% 22%;
+    --ring: 187 65% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary-large {
+    @apply w-full py-5 px-6 text-lg font-semibold rounded-2xl 
+           bg-primary text-primary-foreground 
+           shadow-md hover:shadow-lg
+           transition-all duration-200 ease-out
+           active:scale-[0.98] touch-manipulation;
+  }
+
+  .btn-emergency {
+    @apply w-full py-5 px-6 text-lg font-semibold rounded-2xl 
+           bg-emergency text-emergency-foreground 
+           shadow-lg hover:shadow-xl
+           transition-all duration-200 ease-out
+           active:scale-[0.98] touch-manipulation
+           animate-pulse-subtle;
+  }
+
+  .btn-action {
+    @apply flex-1 py-4 px-4 text-base font-semibold rounded-xl 
+           bg-primary text-primary-foreground 
+           shadow-sm hover:shadow-md
+           transition-all duration-200 ease-out
+           active:scale-[0.98] touch-manipulation;
+  }
+
+  .btn-secondary-action {
+    @apply flex-1 py-4 px-4 text-base font-semibold rounded-xl 
+           bg-secondary text-secondary-foreground 
+           shadow-sm hover:shadow-md
+           transition-all duration-200 ease-out
+           active:scale-[0.98] touch-manipulation;
+  }
+
+  .shelter-card {
+    @apply bg-card rounded-2xl p-4 shadow-md 
+           border border-border/50
+           transition-all duration-200
+           hover:shadow-lg active:scale-[0.99];
+  }
+
+  .status-open {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full 
+           text-sm font-medium bg-accent/15 text-accent;
+  }
+
+  .status-closed {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full 
+           text-sm font-medium bg-emergency/15 text-emergency;
+  }
+
+  .filter-chip {
+    @apply px-4 py-2.5 rounded-full text-sm font-medium
+           border-2 border-border bg-background text-foreground
+           transition-all duration-150
+           hover:border-primary/50
+           data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary;
+  }
+
+  .offline-banner {
+    @apply fixed top-0 left-0 right-0 z-50 
+           py-3 px-4 text-center text-sm font-medium
+           bg-warning text-warning-foreground
+           animate-slide-down;
+  }
+
+  .page-container {
+    @apply min-h-screen pb-safe;
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1.5rem);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Animations */
+@keyframes slide-down {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.92;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
+
+/* Leaflet overrides for mobile */
+.leaflet-container {
+  font-family: 'Inter', sans-serif !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 1rem !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.leaflet-popup-content {
+  margin: 0.75rem 1rem !important;
+}
+
+.leaflet-control-zoom {
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+  border: none !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.leaflet-control-zoom a {
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-size: 18px !important;
+}
