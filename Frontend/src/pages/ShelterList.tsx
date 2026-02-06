@@ -38,8 +38,8 @@ const ShelterList = () => {
           // Copy other fields with defaults
           name: shelter.name,
           address: shelter.address,
-          latitude: shelter.latitude,
-          longitude: shelter.longitude,
+          latitude: parseFloat(shelter.latitude) || 0,   // ✅ Ensure number type
+          longitude: parseFloat(shelter.longitude) || 0, // ✅ Ensure number type
           gender: shelter.gender || 'all',
           pet_friendly: shelter.pet_friendly || false,
           accessibility: shelter.accessibility || false,
@@ -61,17 +61,31 @@ const ShelterList = () => {
 
   // Calculate distances and filter shelters
   const processedShelters = useMemo(() => {
-    let result = shelters.map(shelter => ({
-      shelter,
-      distance: coordinates?.latitude
+    console.log('🔍 User coordinates:', coordinates);
+
+    let result = shelters.map(shelter => {
+      const distance = coordinates?.latitude
         ? calculateDistance(
           coordinates.latitude,
           coordinates.longitude,
           shelter.latitude,
           shelter.longitude
         )
-        : 0
-    }));
+        : 0;
+
+      console.log(`📍 ${shelter.name}:`, {
+        shelterLat: shelter.latitude,
+        shelterLon: shelter.longitude,
+        userLat: coordinates?.latitude,
+        userLon: coordinates?.longitude,
+        distance: distance.toFixed(2) + ' km'
+      });
+
+      return {
+        shelter,
+        distance
+      };
+    });
 
     // Apply filters
     if (activeFilters.length > 0) {

@@ -8,43 +8,46 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { addShelter } from '@/lib/api';
 
 const AddShelter = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-const QUICK_AMENITIES = [
-  'Hot meals',
-  'Showers',
-  'Laundry',
-  'Medical services',
-  'Mental health support',
-  'Case management',
-  'Free WiFi',
-  'Family friendly',
-  'Women only',
-  'Children services',
-];
-const toggleAmenity = (amenity: string) => {
-  const current = formData.amenities
-    ? formData.amenities.split(',').map(a => a.trim())
-    : [];
+  const [geocoding, setGeocoding] = useState(false);
+  const QUICK_AMENITIES = [
+    'Hot meals',
+    'Showers',
+    'Laundry',
+    'Medical services',
+    'Mental health support',
+    'Case management',
+    'Free WiFi',
+    'Family friendly',
+    'Women only',
+    'Children services',
+  ];
+  const toggleAmenity = (amenity: string) => {
+    const current = formData.amenities
+      ? formData.amenities.split(',').map(a => a.trim())
+      : [];
 
-  const updated = current.includes(amenity)
-    ? current.filter(a => a !== amenity)
-    : [...current, amenity];
+    const updated = current.includes(amenity)
+      ? current.filter(a => a !== amenity)
+      : [...current, amenity];
 
-  setFormData({
-    ...formData,
-    amenities: updated.join(', '),
-  });
-};
+    setFormData({
+      ...formData,
+      amenities: updated.join(', '),
+    });
+  };
 
   const [formData, setFormData] = useState({
     name: '',
     address: '',
     city: '',
+    pincode: '',
     latitude: '',
     longitude: '',
     shelter_type: 'all' as 'men' | 'women' | 'family' | 'all',
@@ -60,21 +63,141 @@ const toggleAmenity = (amenity: string) => {
     rules: '',
   });
 
+  // Geocode address to get coordinates
+  const geocodeAddress = async () => {
+    if (!formData.address || !formData.city || !formData.pincode) {
+      toast({
+        title: 'Missing information',
+        description: 'Please enter address, city, and pincode first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setGeocoding(true);
+
+    try {
+      // Try multiple query formats for better results, including pincode if available
+      const baseAddress = formData.pincode
+        ? `${formData.address}, ${formData.city}, ${formData.pincode}`
+        : `${formData.address}, ${formData.city}`;
+
+      const queries = [
+        `${baseAddress}, India`,
+        `${formData.pincode || formData.city}, Maharashtra, India`,
+        baseAddress
+      ];
+
+      let foundLocation = null;
+
+      for (const query of queries) {
+        console.log('🔍 Trying geocoding query:', query);
+
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
+          {
+            headers: {
+              'User-Agent': 'ShelterConnect/1.0'
+            }
+          }
+        );
+
+        const data = await response.json();
+        console.log('📍 Geocoding response:', data);
+
+        if (data && data.length > 0) {
+          foundLocation = data[0];
+          break;
+        }
+      }
+
+      if (foundLocation) {
+        setFormData({
+          ...formData,
+          latitude: foundLocation.lat,
+          longitude: foundLocation.lon,
+        });
+
+        toast({
+          title: 'Coordinates found!',
+          description: foundLocation.display_name,
+        });
+      } else {
+        toast({
+          title: 'Address not found',
+          description: 'Try being more specific (e.g., add landmarks or area name). You can also enter coordinates manually.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch coordinates. Please try again or enter manually.',
+        variant: 'destructive',
+      });
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
+    // Validate coordinates
+    if (!formData.latitude || !formData.longitude) {
+      toast({
+        title: 'Missing coordinates',
+        description: 'Please click "Auto-fill Coordinates" button to get location coordinates.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSubmitting(true);
-    
-    // Mock save - in production this would save to Supabase
-    setTimeout(() => {
+
+    try {
+      // Prepare shelter data with field mapping for backend
+      const shelterData = {
+        name: formData.name,
+        address: formData.address,
+        city: formData.city,
+        latitude: parseFloat(formData.latitude) || 0,
+        longitude: parseFloat(formData.longitude) || 0,
+        gender: formData.shelter_type,  // Backend uses "gender"
+        total_beds: parseInt(formData.capacity),  // Backend uses "total_beds"
+        available_beds: parseInt(formData.available_beds),
+        opening_hours: formData.is_24_hour ? '24/7' : formData.open_hours,
+        accessibility: formData.accessibility,
+        pet_friendly: formData.pet_friendly,
+        languages: formData.languages.split(',').map(l => l.trim()),
+        phone: formData.phone,
+        amenities: formData.amenities.split(',').map(a => a.trim()).filter(Boolean),
+        rules: formData.rules.split(',').map(r => r.trim()).filter(Boolean),
+      };
+
+      console.log('📤 Submitting shelter data:', shelterData);
+
+      // Call backend API
+      await addShelter(shelterData);
+
       toast({
         title: 'Shelter added!',
-        description: 'Your shelter has been added successfully.',
+        description: 'Your shelter has been saved to the database.',
       });
+
       navigate('/dashboard/manage');
+    } catch (error) {
+      console.error('Error adding shelter:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add shelter. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
       setSubmitting(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -166,36 +289,67 @@ const toggleAmenity = (amenity: string) => {
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 required
-                placeholder="New York"
+                placeholder="Mumbai"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pincode">Pincode *</Label>
+              <Input
+                id="pincode"
+                value={formData.pincode}
+                onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                required
+                placeholder="400708"
+                maxLength={6}
+              />
+              <p className="text-xs text-muted-foreground">
+                Including pincode improves geocoding accuracy
+              </p>
+            </div>
+
+            {/* Auto-fill Coordinates Button */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={geocodeAddress}
+              disabled={geocoding || !formData.address || !formData.city || !formData.pincode}
+              className="w-full"
+            >
+              <MapPin className="w-4 h-4 mr-2" />
+              {geocoding ? 'Finding location...' : 'Auto-fill Coordinates from Address'}
+            </Button>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="latitude">Latitude *</Label>
                 <Input
                   id="latitude"
-                  type="number"
-                  step="any"
+                  type="text"
                   value={formData.latitude}
                   onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
                   required
-                  placeholder="40.7128"
+                  placeholder="19.0760"
+                  className="bg-muted"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="longitude">Longitude *</Label>
                 <Input
                   id="longitude"
-                  type="number"
-                  step="any"
+                  type="text"
                   value={formData.longitude}
                   onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
                   required
-                  placeholder="-74.006"
+                  placeholder="72.8777"
+                  className="bg-muted"
                 />
               </div>
             </div>
+
+            <p className="text-xs text-muted-foreground">
+              💡 Tip: Include landmarks, area name, or pincode for better results (e.g., "Sector 8A, Airoli, Navi Mumbai")
+            </p>
           </CardContent>
         </Card>
 
@@ -273,142 +427,141 @@ const toggleAmenity = (amenity: string) => {
         </Card>
 
         {/* Accessibility & Amenities */}
-       {/* Accessibility & Amenities */}
-<Card>
-  <CardHeader>
-    <CardTitle>Accessibility & Amenities</CardTitle>
-  </CardHeader>
+        {/* Accessibility & Amenities */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Accessibility & Amenities</CardTitle>
+          </CardHeader>
 
-  <CardContent className="space-y-4">
-    {/* Accessibility checkboxes */}
-    <div className="flex flex-wrap gap-4">
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="accessibility"
-          checked={formData.accessibility}
-          onChange={(e) =>
-            setFormData({ ...formData, accessibility: e.target.checked })
-          }
-          className="w-4 h-4"
-        />
-        <Label htmlFor="accessibility">Wheelchair Accessible</Label>
-      </div>
+          <CardContent className="space-y-4">
+            {/* Accessibility checkboxes */}
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="accessibility"
+                  checked={formData.accessibility}
+                  onChange={(e) =>
+                    setFormData({ ...formData, accessibility: e.target.checked })
+                  }
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="accessibility">Wheelchair Accessible</Label>
+              </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="pet_friendly"
-          checked={formData.pet_friendly}
-          onChange={(e) =>
-            setFormData({ ...formData, pet_friendly: e.target.checked })
-          }
-          className="w-4 h-4"
-        />
-        <Label htmlFor="pet_friendly">Pet Friendly</Label>
-      </div>
-    </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="pet_friendly"
+                  checked={formData.pet_friendly}
+                  onChange={(e) =>
+                    setFormData({ ...formData, pet_friendly: e.target.checked })
+                  }
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="pet_friendly">Pet Friendly</Label>
+              </div>
+            </div>
 
-    {/* Languages */}
-    <div className="space-y-2">
-      <Label htmlFor="languages">Supported Languages</Label>
-      <Input
-        id="languages"
-        value={formData.languages}
-        onChange={(e) =>
-          setFormData({ ...formData, languages: e.target.value })
-        }
-        placeholder="English, Spanish, Mandarin"
-      />
-      <p className="text-xs text-muted-foreground">Separate with commas</p>
-    </div>
+            {/* Languages */}
+            <div className="space-y-2">
+              <Label htmlFor="languages">Supported Languages</Label>
+              <Input
+                id="languages"
+                value={formData.languages}
+                onChange={(e) =>
+                  setFormData({ ...formData, languages: e.target.value })
+                }
+                placeholder="English, Spanish, Mandarin"
+              />
+              <p className="text-xs text-muted-foreground">Separate with commas</p>
+            </div>
 
-    {/* 🔥 QUICK ADD AMENITIES */}
-    <div className="space-y-2">
-      <Label>Quick Add Amenities</Label>
+            {/* 🔥 QUICK ADD AMENITIES */}
+            <div className="space-y-2">
+              <Label>Quick Add Amenities</Label>
 
-      <div className="flex flex-wrap gap-2">
-        {[
-          'Hot meals',
-          'Showers',
-          'Laundry',
-          'Medical services',
-          'Mental health support',
-          'Case management',
-          'Free WiFi',
-          'Family friendly',
-          'Women only',
-          'Children services',
-        ].map((amenity) => {
-          const selected = formData.amenities
-            ?.split(',')
-            .map(a => a.trim())
-            .includes(amenity);
+              <div className="flex flex-wrap gap-2">
+                {[
+                  'Hot meals',
+                  'Showers',
+                  'Laundry',
+                  'Medical services',
+                  'Mental health support',
+                  'Case management',
+                  'Free WiFi',
+                  'Family friendly',
+                  'Women only',
+                  'Children services',
+                ].map((amenity) => {
+                  const selected = formData.amenities
+                    ?.split(',')
+                    .map(a => a.trim())
+                    .includes(amenity);
 
-          return (
-            <button
-              key={amenity}
-              type="button"
-              onClick={() => {
-                const current = formData.amenities
-                  ? formData.amenities.split(',').map(a => a.trim())
-                  : [];
+                  return (
+                    <button
+                      key={amenity}
+                      type="button"
+                      onClick={() => {
+                        const current = formData.amenities
+                          ? formData.amenities.split(',').map(a => a.trim())
+                          : [];
 
-                const updated = current.includes(amenity)
-                  ? current.filter(a => a !== amenity)
-                  : [...current, amenity];
+                        const updated = current.includes(amenity)
+                          ? current.filter(a => a !== amenity)
+                          : [...current, amenity];
 
-                setFormData({
-                  ...formData,
-                  amenities: updated.join(', '),
-                });
-              }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition
-                ${
-                  selected
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-muted hover:bg-muted/80 border-border'
-                }`}
-            >
-              <span>{amenity}</span>
-              <span className="font-bold">{selected ? '×' : '+'}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+                        setFormData({
+                          ...formData,
+                          amenities: updated.join(', '),
+                        });
+                      }}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition
+                ${selected
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted hover:bg-muted/80 border-border'
+                        }`}
+                    >
+                      <span>{amenity}</span>
+                      <span className="font-bold">{selected ? '×' : '+'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-    {/* Amenities textarea (UNCHANGED) */}
-    <div className="space-y-2">
-      <Label htmlFor="amenities">Amenities</Label>
-      <Textarea
-        id="amenities"
-        value={formData.amenities}
-        onChange={(e) =>
-          setFormData({ ...formData, amenities: e.target.value })
-        }
-        placeholder="Hot meals, Showers, Laundry, Medical services"
-        rows={2}
-      />
-      <p className="text-xs text-muted-foreground">Separate with commas</p>
-    </div>
+            {/* Amenities textarea (UNCHANGED) */}
+            <div className="space-y-2">
+              <Label htmlFor="amenities">Amenities</Label>
+              <Textarea
+                id="amenities"
+                value={formData.amenities}
+                onChange={(e) =>
+                  setFormData({ ...formData, amenities: e.target.value })
+                }
+                placeholder="Hot meals, Showers, Laundry, Medical services"
+                rows={2}
+              />
+              <p className="text-xs text-muted-foreground">Separate with commas</p>
+            </div>
 
-    {/* Rules */}
-    <div className="space-y-2">
-      <Label htmlFor="rules">Shelter Rules</Label>
-      <Textarea
-        id="rules"
-        value={formData.rules}
-        onChange={(e) =>
-          setFormData({ ...formData, rules: e.target.value })
-        }
-        placeholder="No alcohol or drugs, Check-in by 9 PM, Respectful behavior required"
-        rows={2}
-      />
-      <p className="text-xs text-muted-foreground">Separate with commas</p>
-    </div>
-  </CardContent>
-</Card>
+            {/* Rules */}
+            <div className="space-y-2">
+              <Label htmlFor="rules">Shelter Rules</Label>
+              <Textarea
+                id="rules"
+                value={formData.rules}
+                onChange={(e) =>
+                  setFormData({ ...formData, rules: e.target.value })
+                }
+                placeholder="No alcohol or drugs, Check-in by 9 PM, Respectful behavior required"
+                rows={2}
+              />
+              <p className="text-xs text-muted-foreground">Separate with commas</p>
+            </div>
+          </CardContent>
+        </Card>
 
         <Button type="submit" className="w-full" disabled={submitting}>
           <Save className="w-4 h-4 mr-2" />

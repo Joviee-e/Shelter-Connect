@@ -28,6 +28,8 @@ def add_shelter():
     data = request.get_json()
     ngo_id = g.ngo["id"]
 
+    print("🔍 DEBUG: Received shelter data:", data)  # Debug log
+
     shelter_id = create_shelter(ngo_id, data)
 
     return jsonify({

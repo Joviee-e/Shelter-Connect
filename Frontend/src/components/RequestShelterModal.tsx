@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle, X } from 'lucide-react';
+import { submitShelterRequest } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface RequestShelterModalProps {
   open: boolean;
@@ -23,21 +25,45 @@ const RequestShelterModal = ({
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  const { toast } = useToast();
+
   if (!open) return null;
 
-  const handleSubmit = () => {
-    console.log({
-      shelterId: shelter.id,
-      name,
-      phone,
-      email,
-      gender,
-      age,
-      bedsNeeded,
-      notes,
-    });
+  const handleSubmit = async () => {
+    try {
+      await submitShelterRequest(shelter.id, {
+        name,
+        phone,
+        email,
+        gender,
+        age,
+        beds_needed: bedsNeeded,
+        notes,
+      });
 
-    setSubmitted(true);
+      setSubmitted(true);
+
+      // Delay closing to show success message
+      setTimeout(() => {
+        onClose();
+        setSubmitted(false);
+        // Reset form
+        setName('');
+        setPhone('');
+        setEmail('');
+        setGender('');
+        setAge('');
+        setBedsNeeded(1);
+        setNotes('');
+      }, 2000);
+
+    } catch (error) {
+      toast({
+        title: "Request Failed",
+        description: error instanceof Error ? error.message : "Failed to submit request",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

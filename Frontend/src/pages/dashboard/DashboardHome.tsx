@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Building2, Users, Bell, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchMyShelters } from '@/lib/api';
 
 interface Stats {
   totalShelters: number;
@@ -12,15 +13,40 @@ interface Stats {
 
 const DashboardHome = () => {
   const { profile } = useAuth();
-  
-  // Using mock data for demo
-  const [stats] = useState<Stats>({
-    totalShelters: 3,
-    activeShelters: 2,
-    pendingRequests: 5,
-    totalBeds: 150,
+
+  const [stats, setStats] = useState<Stats>({
+    totalShelters: 0,
+    activeShelters: 0,
+    pendingRequests: 0,
+    totalBeds: 0,
   });
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch shelters and calculate stats
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const shelters = await fetchMyShelters();
+
+        // Calculate stats from fetched data
+        const calculatedStats = {
+          totalShelters: shelters.length,
+          activeShelters: shelters.filter((s: any) => s.is_active !== false).length,
+          totalBeds: shelters.reduce((sum: number, s: any) => sum + (s.total_beds || 0), 0),
+          pendingRequests: 0, // TODO: Fetch from requests API when available
+        };
+
+        setStats(calculatedStats);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const statCards = [
     {

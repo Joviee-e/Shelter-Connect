@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Building2, Trash2, Eye, EyeOff, Users, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { fetchMyShelters, updateShelterBeds, deleteShelter as deleteShelterAPI, updateShelter } from '@/lib/api';
 
 interface Shelter {
   id: string;
@@ -17,88 +18,147 @@ interface Shelter {
   is_full: boolean;
 }
 
-// Mock data for demo
-const mockShelters: Shelter[] = [
-  {
-    id: '1',
-    name: 'Harbor Haven Shelter',
-    address: '123 Main Street',
-    city: 'Downtown',
-    shelter_type: 'all',
-    capacity: 150,
-    available_beds: 23,
-    is_active: true,
-    is_full: false,
-  },
-  {
-    id: '2',
-    name: 'Sunrise Family Center',
-    address: '456 Oak Avenue',
-    city: 'Midtown',
-    shelter_type: 'family',
-    capacity: 80,
-    available_beds: 12,
-    is_active: true,
-    is_full: false,
-  },
-  {
-    id: '3',
-    name: 'Hope Community Center',
-    address: '567 Park Boulevard',
-    city: 'Westside',
-    shelter_type: 'all',
-    capacity: 100,
-    available_beds: 0,
-    is_active: false,
-    is_full: true,
-  },
-];
-
 const ManageShelters = () => {
   const { toast } = useToast();
-  const [shelters, setShelters] = useState<Shelter[]>(mockShelters);
-  const [loading] = useState(false);
+  const [shelters, setShelters] = useState<Shelter[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const toggleActive = (id: string, currentStatus: boolean) => {
-    setShelters(shelters.map(s => 
-      s.id === id ? { ...s, is_active: !currentStatus } : s
-    ));
-    toast({
-      title: currentStatus ? 'Shelter deactivated' : 'Shelter activated',
-      description: `Shelter is now ${!currentStatus ? 'visible' : 'hidden'} to the public.`,
-    });
+  // Fetch shelters from backend
+  useEffect(() => {
+    const loadShelters = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchMyShelters();
+
+        // Map backend fields to frontend interface
+        const mappedShelters = data.map((shelter: any) => ({
+          id: shelter._id,
+          name: shelter.name,
+          address: shelter.address,
+          city: shelter.city || 'Unknown',
+          shelter_type: shelter.gender || 'all',
+          capacity: shelter.total_beds || 0,
+          available_beds: shelter.available_beds || 0,
+          is_active: shelter.is_active !== false, // Default to true if not set
+          is_full: shelter.available_beds === 0,
+        }));
+
+        setShelters(mappedShelters);
+        setError('');
+      } catch (err) {
+        console.error('Error fetching shelters:', err);
+        setError('Failed to load shelters. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadShelters();
+  }, []);
+
+  const toggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      await updateShelter(id, { is_active: !currentStatus });
+
+      setShelters(shelters.map(s =>
+        s.id === id ? { ...s, is_active: !currentStatus } : s
+      ));
+
+      toast({
+        title: currentStatus ? 'Shelter deactivated' : 'Shelter activated',
+        description: `Shelter is now ${!currentStatus ? 'visible' : 'hidden'} to the public.`,
+      });
+    } catch (error) {
+      console.error('Error toggling shelter:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update shelter status.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const toggleFull = (id: string, currentStatus: boolean) => {
-    setShelters(shelters.map(s => 
-      s.id === id ? { ...s, is_full: !currentStatus, available_beds: !currentStatus ? 0 : s.available_beds } : s
-    ));
-    toast({
-      title: !currentStatus ? 'Marked as full' : 'Marked as available',
-    });
+  const toggleFull = async (id: string, currentStatus: boolean) => {
+    try {
+      const shelter = shelters.find(s => s.id === id);
+      if (!shelter) return;
+
+      const newBeds = !currentStatus ? 0 : shelter.capacity;
+      await updateShelterBeds(id, newBeds);
+
+      setShelters(shelters.map(s =>
+        s.id === id ? { ...s, is_full: !currentStatus, available_beds: newBeds } : s
+      ));
+
+      toast({
+        title: !currentStatus ? 'Marked as full' : 'Marked as available',
+      });
+    } catch (error) {
+      console.error('Error marking shelter full:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update shelter.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const updateBeds = (id: string, beds: number) => {
-    setShelters(shelters.map(s => 
-      s.id === id ? { ...s, available_beds: beds, is_full: beds === 0 } : s
-    ));
-    toast({
-      title: 'Beds updated',
-    });
+  const updateBeds = async (id: string, beds: number) => {
+    try {
+      await updateShelterBeds(id, beds);
+
+      setShelters(shelters.map(s =>
+        s.id === id ? { ...s, available_beds: beds, is_full: beds === 0 } : s
+      ));
+
+      toast({
+        title: 'Beds updated',
+      });
+    } catch (error) {
+      console.error('Error updating beds:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update beds.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const deleteShelter = (id: string) => {
+  const handleDeleteShelter = async (id: string) => {
     if (!confirm('Are you sure you want to delete this shelter?')) return;
-    setShelters(shelters.filter(s => s.id !== id));
-    toast({
-      title: 'Shelter deleted',
-    });
+
+    try {
+      await deleteShelterAPI(id);
+
+      setShelters(shelters.filter(s => s.id !== id));
+
+      toast({
+        title: 'Shelter deleted',
+      });
+    } catch (error) {
+      console.error('Error deleting shelter:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete shelter.',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-red-500 mb-4">{error}</p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
       </div>
     );
   }
@@ -205,7 +265,7 @@ const ManageShelters = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => deleteShelter(shelter.id)}
+                    onClick={() => handleDeleteShelter(shelter.id)}
                     className="text-destructive hover:text-destructive"
                   >
                     <Trash2 className="w-4 h-4 mr-1" />

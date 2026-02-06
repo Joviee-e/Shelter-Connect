@@ -21,12 +21,25 @@ def create_shelter(ngo_id, shelter_data):
         "city": shelter_data.get("city"),
         "state": shelter_data.get("state"),
         "pincode": shelter_data.get("pincode"),
+        "latitude": shelter_data.get("latitude", 0),
+        "longitude": shelter_data.get("longitude", 0),
+        "gender": shelter_data.get("gender", "all"),
+        "phone": shelter_data.get("phone", ""),
+        "opening_hours": shelter_data.get("opening_hours", "24/7"),
+        "accessibility": shelter_data.get("accessibility", False),
+        "pet_friendly": shelter_data.get("pet_friendly", False),
+        "languages": shelter_data.get("languages", ["English"]),
+        "amenities": shelter_data.get("amenities", []),
+        "rules": shelter_data.get("rules", []),
         "total_beds": shelter_data.get("total_beds", 0),
         "available_beds": shelter_data.get("available_beds", 0),
+        "is_active": True,
         "emergency_mode": False,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
+
+    print("🔍 DEBUG: Shelter document to insert:", shelter_document)  # Debug log
 
     result = shelter_collection.insert_one(shelter_document)
 

@@ -9,7 +9,9 @@ from config import Config
 from routes.auth_routes import auth_bp
 from routes.ngo_routes import ngo_bp
 from routes.shelter_routes import shelter_bp
+from routes.emergency_routes import emergency_bp
 from routes.public_routes import public_bp
+from routes.request_routes import request_bp
 
 
 # -------------------------------
@@ -62,7 +64,9 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(ngo_bp, url_prefix="/api/ngo")
     app.register_blueprint(shelter_bp, url_prefix="/api/shelters")
+    app.register_blueprint(emergency_bp, url_prefix="/api/emergency")
     app.register_blueprint(public_bp, url_prefix="/api/public")
+    app.register_blueprint(request_bp, url_prefix="/api/requests")
 
     # -------------------------------
     # Health Check Route
