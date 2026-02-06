@@ -1,0 +1,11 @@
+{
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/Backend"
+    ],
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/Backend"
+    ],
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none"
+    }
+}

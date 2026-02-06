@@ -8,20 +8,49 @@ export interface GeolocationState {
   permissionDenied: boolean;
 }
 
-// Default to NYC for demo purposes
+// Default to Mumbai, India for demo purposes (matches shelter locations)
 const DEFAULT_LOCATION = {
-  latitude: 40.7128,
-  longitude: -74.006,
+  latitude: 19.076,
+  longitude: 72.8777,
 };
 
 export function useGeolocation() {
-  const [state, setState] = useState<GeolocationState>({
-    latitude: null,
-    longitude: null,
-    error: null,
-    loading: false,
-    permissionDenied: false,
+  const [state, setState] = useState<GeolocationState>(() => {
+    // Try to restore coordinates from sessionStorage
+    try {
+      const saved = sessionStorage.getItem('user_location');
+      if (saved) {
+        const { latitude, longitude } = JSON.parse(saved);
+        return {
+          latitude,
+          longitude,
+          error: null,
+          loading: false,
+          permissionDenied: false,
+        };
+      }
+    } catch (e) {
+      console.error('Failed to restore location from storage:', e);
+    }
+
+    return {
+      latitude: null,
+      longitude: null,
+      error: null,
+      loading: false,
+      permissionDenied: false,
+    };
   });
+
+  // Save coordinates to sessionStorage whenever they change
+  useEffect(() => {
+    if (state.latitude !== null && state.longitude !== null) {
+      sessionStorage.setItem('user_location', JSON.stringify({
+        latitude: state.latitude,
+        longitude: state.longitude
+      }));
+    }
+  }, [state.latitude, state.longitude]);
 
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
