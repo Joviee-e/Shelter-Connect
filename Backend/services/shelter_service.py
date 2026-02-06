@@ -1,6 +1,6 @@
-from flask import current_app
-from bson import ObjectId
 from datetime import datetime
+from bson import ObjectId
+from db.mongo import shelters_collection
 
 
 # ---------------------------------------------------
@@ -10,9 +10,6 @@ def create_shelter(ngo_id, shelter_data):
     """
     Create a new shelter under an NGO
     """
-
-    db = current_app.db
-    shelter_collection = db["shelters"]
 
     shelter_document = {
         "ngo_id": ngo_id,
@@ -28,7 +25,7 @@ def create_shelter(ngo_id, shelter_data):
         "updated_at": datetime.utcnow()
     }
 
-    result = shelter_collection.insert_one(shelter_document)
+    result = shelters_collection.insert_one(shelter_document)
 
     return str(result.inserted_id)
 
@@ -41,10 +38,7 @@ def get_shelter_by_id(shelter_id):
     Fetch shelter using shelter ID
     """
 
-    db = current_app.db
-    shelter_collection = db["shelters"]
-
-    shelter = shelter_collection.find_one({"_id": ObjectId(shelter_id)})
+    shelter = shelters_collection.find_one({"_id": ObjectId(shelter_id)})
 
     if shelter:
         shelter["_id"] = str(shelter["_id"])
@@ -60,10 +54,7 @@ def get_shelters_by_ngo(ngo_id):
     Fetch all shelters belonging to a specific NGO
     """
 
-    db = current_app.db
-    shelter_collection = db["shelters"]
-
-    shelters = list(shelter_collection.find({"ngo_id": ngo_id}))
+    shelters = list(shelters_collection.find({"ngo_id": ngo_id}))
 
     for shelter in shelters:
         shelter["_id"] = str(shelter["_id"])
@@ -79,12 +70,9 @@ def update_shelter(shelter_id, update_data):
     Update shelter details like name, address etc.
     """
 
-    db = current_app.db
-    shelter_collection = db["shelters"]
-
     update_data["updated_at"] = datetime.utcnow()
 
-    result = shelter_collection.update_one(
+    result = shelters_collection.update_one(
         {"_id": ObjectId(shelter_id)},
         {"$set": update_data}
     )
@@ -100,10 +88,7 @@ def delete_shelter(shelter_id):
     Remove a shelter
     """
 
-    db = current_app.db
-    shelter_collection = db["shelters"]
-
-    result = shelter_collection.delete_one({"_id": ObjectId(shelter_id)})
+    result = shelters_collection.delete_one({"_id": ObjectId(shelter_id)})
 
     return result.deleted_count
 
@@ -116,10 +101,7 @@ def update_available_beds(shelter_id, beds_count):
     Update the number of available beds
     """
 
-    db = current_app.db
-    shelter_collection = db["shelters"]
-
-    result = shelter_collection.update_one(
+    result = shelters_collection.update_one(
         {"_id": ObjectId(shelter_id)},
         {
             "$set": {
@@ -140,10 +122,7 @@ def toggle_emergency_mode(shelter_id, status):
     Turn emergency mode ON/OFF for shelter
     """
 
-    db = current_app.db
-    shelter_collection = db["shelters"]
-
-    result = shelter_collection.update_one(
+    result = shelters_collection.update_one(
         {"_id": ObjectId(shelter_id)},
         {
             "$set": {
@@ -157,17 +136,14 @@ def toggle_emergency_mode(shelter_id, status):
 
 
 # ---------------------------------------------------
-# LIST ALL SHELTERS (GLOBAL / FUTURE ADMIN)
+# LIST ALL SHELTERS
 # ---------------------------------------------------
 def list_all_shelters():
     """
     Returns all shelters in the system
     """
 
-    db = current_app.db
-    shelter_collection = db["shelters"]
-
-    shelters = list(shelter_collection.find())
+    shelters = list(shelters_collection.find())
 
     for shelter in shelters:
         shelter["_id"] = str(shelter["_id"])
