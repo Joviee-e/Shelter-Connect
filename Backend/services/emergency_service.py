@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from pymongo.collection import Collection
 from utils.geo_helpers import meters_to_km
 
@@ -64,3 +65,23 @@ def get_nearest_shelters(
         )
 
     return results
+=======
+from db.mongo import shelters_collection
+
+def get_emergency_shelters(lat, lng, max_distance=3000):
+    return list(shelters_collection.find({
+        "location": {
+            "$near": {
+                "$geometry": {
+                "type":"Point",
+                "coordinates": [lng, lat]
+                },
+            "$maxDistance": max_distance
+            }
+        },
+        "status":"ACTIVE",
+        "emergencyEnabled":True,
+        "availableBeds": {"$gt":0}
+    }))
+
+>>>>>>> 5a3e7a02fa09fd134c03ecdc3471e7bcef7d7324

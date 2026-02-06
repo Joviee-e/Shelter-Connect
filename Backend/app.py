@@ -1,4 +1,5 @@
 # Flask entry point
+
 from flask import Flask
 from pymongo import MongoClient
 
